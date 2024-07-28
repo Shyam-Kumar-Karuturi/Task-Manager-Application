@@ -1,11 +1,15 @@
-import React, { useState, Fragment } from "react";
-import axios, { AxiosResponse } from "axios";
+import React, { useState, Fragment, useEffect } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { ClipLoader } from "react-spinners";
 import TaskList from "./TaskList";
 import TaskFilter from "./TaskFilter";
 import TaskForm from "./TaskForm";
 import { Task } from "../types";
+import {
+  fetchTasks,
+  handleTaskAdded,
+  handleTaskDeleted,
+} from "../api/auth.service";
 
 const TaskManager: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -14,76 +18,17 @@ const TaskManager: React.FC = () => {
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
   const [isLoading, setLoading] = useState<boolean>(false);
 
-  // Filter tasks based on status
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  const loadTasks = async () => {
+    await fetchTasks(handleTasksFiltered, setLoading);
+  };
+
   const handleTasksFiltered = (tasks: Task[]) => {
+    setTasks(tasks);
     setFilteredTasks(tasks);
-  };
-
-  const fetchTasks = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get("http://localhost:8000/api/tasks/", {
-        params: {},
-      });
-      handleTasksFiltered(response.data);
-    } catch (error) {
-      console.error("Error fetching tasks:", error);
-    } finally {
-    }
-    setLoading(false);
-  };
-
-  // Add or edit a task
-  const handleTaskAdded = async (newTask: Omit<Task, "id">) => {
-    try {
-      const taskWithTimestamp: Omit<Task, "id"> = {
-        ...newTask,
-        created_at: new Date().toISOString(),
-      };
-      let response: AxiosResponse<any, any>;
-      if (currentTask) {
-        // Editing an existing task
-        response = await axios.put(
-          `http://localhost:8000/api/tasks/${currentTask.id}/`,
-          taskWithTimestamp
-        );
-        setTasks(
-          tasks.map((task) =>
-            task.id === currentTask.id ? response.data : task
-          )
-        );
-        setFilteredTasks(
-          tasks.map((task) =>
-            task.id === currentTask.id ? response.data : task
-          )
-        );
-      } else {
-        // Adding a new task
-        response = await axios.post(
-          "http://localhost:8000/api/tasks/",
-          taskWithTimestamp
-        );
-        setTasks([...tasks, response.data]);
-        setFilteredTasks([...tasks, response.data]);
-      }
-      setIsOpen(false);
-      setCurrentTask(null);
-      fetchTasks();
-    } catch (error) {
-      console.error("Error adding/editing task:", error);
-    }
-  };
-
-  // Delete a task
-  const handleTaskDeleted = async (id: number) => {
-    try {
-      await axios.delete(`http://localhost:8000/api/tasks/${id}/`);
-      setTasks(tasks.filter((task) => task.id !== id));
-      setFilteredTasks(tasks.filter((task) => task.id !== id));
-      fetchTasks();
-    } catch (error) {
-      console.error("Error deleting task:", error);
-    }
   };
 
   // Open edit task form
@@ -142,7 +87,18 @@ const TaskManager: React.FC = () => {
             <Dialog.Panel className="absolute top-[25%] left-[35%] w-[30%] mx-auto max-w-lg transform overflow-hidden rounded-lg bg-white p-6 shadow-xl transition-all">
               <TaskForm
                 task={currentTask}
-                onSubmit={handleTaskAdded}
+                onSubmit={(newTask) =>
+                  handleTaskAdded(
+                    newTask,
+                    currentTask,
+                    tasks,
+                    setTasks,
+                    setFilteredTasks,
+                    setIsOpen,
+                    setCurrentTask,
+                    loadTasks
+                  )
+                }
                 onCancel={() => {
                   setIsOpen(false);
                   setCurrentTask(null);
@@ -168,7 +124,9 @@ const TaskManager: React.FC = () => {
         <TaskList
           tasks={filteredTasks}
           onEdit={handleEditTask}
-          onDelete={handleTaskDeleted}
+          onDelete={(id: number) =>
+            handleTaskDeleted(id, tasks, setTasks, setFilteredTasks, loadTasks)
+          }
         />
       )}
     </div>
