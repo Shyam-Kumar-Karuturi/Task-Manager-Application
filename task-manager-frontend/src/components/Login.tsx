@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { setTokens } from "../api/authSlice";
 import AlertPopover from "./Alert";
+import bgImage from "../assets/bg2.png";
 
 const Login: React.FC = () => {
   const [loginMethod, setLoginMethod] = useState<string>("email");
@@ -63,7 +64,6 @@ const Login: React.FC = () => {
           email,
           password,
         });
-        console.log("Login successful", response);
         dispatch(
           setTokens({
             accessToken: response.access,
@@ -73,7 +73,6 @@ const Login: React.FC = () => {
         setAuthenticated(true);
         navigate("/dashboard");
       } catch (error) {
-        console.error("Login error", error);
         setErrorMessage(
           "Login failed. Please check your credentials and try again."
         );
@@ -85,7 +84,6 @@ const Login: React.FC = () => {
           phone_number: phoneNumber,
           otp: otp.join(""),
         });
-        console.log("Login successful", response);
         dispatch(
           setTokens({
             accessToken: response.access,
@@ -95,7 +93,6 @@ const Login: React.FC = () => {
         setAuthenticated(true);
         navigate("/dashboard");
       } catch (error) {
-        console.error("Login error", error);
         setErrorMessage(
           "Login failed. Please check your credentials and try again."
         );
@@ -118,8 +115,16 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-md shadow-md w-full max-w-md">
+    <div
+      className="min-h-screen flex items-center justify-center bg-gray-100 relative"
+      style={{
+        backgroundImage: `url(${bgImage})`,
+        // backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
+      <div className="absolute inset-0 bg-black opacity-50"></div>
+      <div className="bg-white p-8 rounded-md shadow-md w-full max-w-md relative z-10">
         <h2 className="text-2xl font-bold mb-6">Login</h2>
         <div className="mb-4">
           <button

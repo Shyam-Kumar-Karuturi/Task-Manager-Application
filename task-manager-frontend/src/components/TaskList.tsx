@@ -12,6 +12,10 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit, onDelete }) => {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(5);
+
   // Sorting function
   const sortTasks = (tasks: Task[]) => {
     return tasks.slice().sort((a, b) => {
@@ -55,7 +59,28 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit, onDelete }) => {
     setTaskToDelete(null);
   };
 
+  // Pagination logic
   const sortedTasks = sortTasks(tasks);
+  const totalItems = sortedTasks.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  const currentTasks = sortedTasks.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePageChange = (page: number) => {
+    if (page > 0 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const handleItemsPerPageChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1); // Reset to first page when items per page change
+  };
 
   return (
     <div className="overflow-x-auto">
@@ -111,8 +136,8 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit, onDelete }) => {
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {sortedTasks.length > 0 ? (
-            sortedTasks.map((task) => (
+          {currentTasks.length > 0 ? (
+            currentTasks.map((task) => (
               <tr key={task.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {task.title}
@@ -129,7 +154,19 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit, onDelete }) => {
                     : "No Due Date"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {task.description}
+                  <div className="relative group">
+                    <span
+                      className="truncate max-w-xs"
+                      title={task.description}
+                    >
+                      {task.description.length > 12
+                        ? `${task.description.slice(0, 12)}...`
+                        : task.description}
+                    </span>
+                    <div className="absolute bottom-0 left-0 hidden mb-8 group-hover:block px-2 py-1 bg-gray-700 text-white text-xs rounded">
+                      {task.description}
+                    </div>
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <button
@@ -186,6 +223,42 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit, onDelete }) => {
           </div>
         </div>
       )}
+
+      <div className="flex justify-between items-center mt-4">
+        <div className="flex items-center space-x-2">
+          <label className="text-sm text-gray-900">Items per page:</label>
+          <select
+            value={itemsPerPage}
+            onChange={handleItemsPerPageChange}
+            className="px-4 py-2 border border-gray-300 rounded"
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+        <div className="text-sm text-gray-900 bg-gray-200 px-4 py-2 rounded">
+          Page {currentPage} of {totalPages}
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded"
+          >
+            &lt;
+          </button>
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded"
+          >
+            &gt;
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

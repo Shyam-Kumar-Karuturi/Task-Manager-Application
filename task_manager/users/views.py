@@ -2,6 +2,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
+from rest_framework.exceptions import ValidationError
 
 from .serializers import UserSerializer, LoginSerializer
 
@@ -13,6 +14,14 @@ class UserRegistrationView(generics.CreateAPIView):
     serializer_class = UserSerializer
 
     def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            # Add custom error messages here
+            return Response({
+                'detail': 'Registration failed. Please check your input.',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         response = super().create(request, *args, **kwargs)
         user = User.objects.get(email=response.data['email'])
         refresh = RefreshToken.for_user(user)
@@ -26,10 +35,22 @@ class UserLoginView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data
-        refresh = RefreshToken.for_user(user)
-        return Response({
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-        }, status=status.HTTP_200_OK)
+        try:
+            serializer.is_valid(raise_exception=True)
+            user = serializer.validated_data
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }, status=status.HTTP_200_OK)
+        except ValidationError as e:
+            return Response({
+                'detail': 'Login failed. Please check your credentials.',
+                'errors': e.detail
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({
+                'detail': 'An unexpected error occurred. Please try again later.',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

@@ -5,6 +5,7 @@ import { register } from "../api/auth.service";
 import { useDispatch } from "react-redux";
 import { setTokens } from "../api/authSlice";
 import AlertPopover from "./Alert";
+import bgImage from "../assets/bg.png";
 
 const Registration: React.FC = () => {
   const [name, setName] = useState<string>("");
@@ -101,8 +102,16 @@ const Registration: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-md shadow-md w-full max-w-md">
+    <div
+      className="min-h-screen flex items-center justify-center bg-gray-100 relative"
+      style={{
+        backgroundImage: `url(${bgImage})`,
+        // backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
+      <div className="absolute inset-0 bg-black opacity-50"></div>
+      <div className="bg-white p-8 rounded-md shadow-md w-full max-w-md relative z-10">
         <h2 className="text-2xl font-bold mb-6">Registration</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -244,7 +253,9 @@ const Registration: React.FC = () => {
           <div className="flex items-center justify-between">
             <button
               type="submit"
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
+                !isOtpVerified && "opacity-50 cursor-not-allowed"
+              }`}
               disabled={!isOtpVerified}
             >
               Register

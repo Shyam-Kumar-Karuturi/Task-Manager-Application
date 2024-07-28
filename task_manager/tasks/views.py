@@ -8,8 +8,14 @@ from rest_framework import status
 from django.utils.dateparse import parse_date
 from rest_framework.permissions import IsAuthenticated
 
+
 class TaskListCreateAPIView(APIView):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
     def get(self, request):
         tasks = Task.objects.filter(user=request.user)
@@ -25,11 +31,26 @@ class TaskListCreateAPIView(APIView):
         if task_status:
             filters &= Q(status=task_status)
         if from_date:
-            filters &= Q(due_date__gte=parse_date(from_date))
+            try:
+                parsed_from_date = parse_date(from_date)
+                if not parsed_from_date:
+                    raise ValueError("Invalid date format for 'from_date'")
+                filters &= Q(due_date__gte=parsed_from_date)
+            except ValueError as e:
+                return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         if to_date:
-            filters &= Q(due_date__lte=parse_date(to_date))
+            try:
+                parsed_to_date = parse_date(to_date)
+                if not parsed_to_date:
+                    raise ValueError("Invalid date format for 'to_date'")
+                filters &= Q(due_date__lte=parsed_to_date)
+            except ValueError as e:
+                return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         tasks = tasks.filter(filters)
+
+        if not tasks.exists():
+            return Response({'detail': 'No tasks found matching the criteria.'}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = TaskSerializer(tasks, many=True)
         return Response(serializer.data)
@@ -37,9 +58,12 @@ class TaskListCreateAPIView(APIView):
     def post(self, request):
         serializer = TaskSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=request.user)
+            self.perform_create(serializer)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            'detail': 'Task creation failed. Please check your input.',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TaskDetailAPIView(APIView):
@@ -56,9 +80,12 @@ class TaskDetailAPIView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            'detail': 'Task update failed. Please check your input.',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
         task = get_object_or_404(Task, pk=pk, user=request.user)
         task.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({'detail': 'Task deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
