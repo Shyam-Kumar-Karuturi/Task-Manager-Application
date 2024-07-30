@@ -20,6 +20,7 @@ const Login: React.FC = () => {
   const [phoneError, setPhoneError] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [showError, setShowError] = useState<boolean>(false);
+  const [alertMessage, setAlertMessage] = useState<string>("");
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -60,10 +61,11 @@ const Login: React.FC = () => {
     e.preventDefault();
     if (loginMethod === "email") {
       try {
-        const response = await loginWithEmail({
-          email,
-          password,
-        });
+        const params = {
+          email: email,
+          password: password,
+        };
+        const response = await loginWithEmail(params, setAlertMessage);
         dispatch(
           setTokens({
             accessToken: response.access,
@@ -80,10 +82,11 @@ const Login: React.FC = () => {
       }
     } else {
       try {
-        const response = await loginWithPhone({
+        const params = {
           phone_number: phoneNumber,
           otp: otp.join(""),
-        });
+        };
+        const response = await loginWithPhone(params, setAlertMessage);
         dispatch(
           setTokens({
             accessToken: response.access,
@@ -108,10 +111,6 @@ const Login: React.FC = () => {
     } else {
       alert("Invalid OTP");
     }
-  };
-
-  const closeAlert = () => {
-    setShowError(false);
   };
 
   return (
@@ -261,10 +260,12 @@ const Login: React.FC = () => {
             Login
           </button>
         </form>
-        {showError && (
-          <AlertPopover message={errorMessage} onClose={closeAlert} />
-        )}
       </div>
+      <AlertPopover
+        isOpen={!!alertMessage}
+        message={alertMessage}
+        onClose={() => setAlertMessage("")}
+      />
     </div>
   );
 };

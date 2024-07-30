@@ -15,8 +15,8 @@ const Registration: React.FC = () => {
   const [isOtpVerified, setIsOtpVerified] = useState<boolean>(false);
   const [password, setPassword] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string>("");
-  const [showError, setShowError] = useState<boolean>(false);
+  const [alertMessage, setAlertMessage] = useState<string>("");
+
   const dispatch = useDispatch();
 
   // State for touched fields
@@ -36,7 +36,7 @@ const Registration: React.FC = () => {
     e.preventDefault();
     try {
       const userData = { name, email, phone_number: phoneNumber, password };
-      const response = await register(userData);
+      const response = await register(userData, setAlertMessage);
       console.log("Registration successful", response);
       dispatch(
         setTokens({
@@ -46,8 +46,6 @@ const Registration: React.FC = () => {
       );
     } catch (error) {
       console.error("Registration error", error);
-      setErrorMessage("Registration failed.");
-      setShowError(true);
     }
   };
 
@@ -95,10 +93,6 @@ const Registration: React.FC = () => {
       password.length >= minLength &&
       password.length <= maxLength
     );
-  };
-
-  const closeAlert = () => {
-    setShowError(false);
   };
 
   return (
@@ -262,10 +256,12 @@ const Registration: React.FC = () => {
             </button>
           </div>
         </form>
-        {showError && (
-          <AlertPopover message={errorMessage} onClose={closeAlert} />
-        )}
       </div>
+      <AlertPopover
+        isOpen={!!alertMessage}
+        message={alertMessage}
+        onClose={() => setAlertMessage("")}
+      />
     </div>
   );
 };

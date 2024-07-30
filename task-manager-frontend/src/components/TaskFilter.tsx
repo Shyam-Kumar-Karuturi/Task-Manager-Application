@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Task } from "../types";
 import { fetchTasks } from "../api/auth.service";
+import AlertPopover from "./Alert";
 
 // Debounce function
 const debounce = (func: (...args: any[]) => void, delay: number) => {
@@ -25,10 +26,12 @@ const TaskFilter: React.FC<Props> = ({ onTasksFiltered, setLoading }) => {
   const [toDate, setToDate] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState<string>("");
+  // const [isOpen, setIsOpen] = useState(false);
 
   // Debounced search function
   const debouncedFetchTasks = debounce((params) => {
-    fetchTasks(params, onTasksFiltered, setLoading);
+    fetchTasks(params, onTasksFiltered, setLoading, setAlertMessage);
   }, 500);
 
   useEffect(() => {
@@ -185,6 +188,11 @@ const TaskFilter: React.FC<Props> = ({ onTasksFiltered, setLoading }) => {
             Reset Filters
           </button>
         </div>
+        <AlertPopover
+          isOpen={!!alertMessage}
+          message={alertMessage}
+          onClose={() => setAlertMessage("")}
+        />
       </div>
     </>
   );

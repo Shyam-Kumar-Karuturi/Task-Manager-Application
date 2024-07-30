@@ -2,6 +2,7 @@ import { Task } from '../types';
 import axiosInstance from './axiosInstance';
 import store from './store';
 import { updateAccessToken, clearTokens } from './authSlice';
+import AlertPopover from "../components/Alert";
 
 // Function to refresh access token
 const refreshAccessToken = async () => {
@@ -29,7 +30,7 @@ const refreshAccessToken = async () => {
 };
 
 // Function to handle requests with token refresh logic
-const axiosRequest = async (config: any) => {
+const axiosRequest = async (config: any, setAlert: (message: string) => void) => {
   try {
     const response = await axiosInstance(config);
     return response;
@@ -44,11 +45,12 @@ const axiosRequest = async (config: any) => {
       if (newAccessToken) {
         axiosInstance.defaults.headers['Authorization'] = `Bearer ${newAccessToken}`;
         originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
-
+        setAlert('');
         return axiosInstance(originalRequest);
       }
     }
 
+    setAlert(error.response?.data?.detail || 'An unexpected error occurred.');
     throw error;
   }
 };
@@ -60,13 +62,13 @@ interface RegistrationParams {
   password: string;
 }
 
-export const register = async (userData: RegistrationParams) => {
+export const register = async (userData: RegistrationParams, setAlert: (message: string) => void) => {
   const config = {
     method: 'post',
     url: 'users/register/',
     data: userData,
   };
-  const response = await axiosRequest(config);
+  const response = await axiosRequest(config, setAlert);
   return response.data;
 };
 
@@ -80,23 +82,23 @@ interface LoginWithPhoneParams {
   otp: string;
 }
 
-export const loginWithEmail = async (params: LoginWithEmailParams) => {
+export const loginWithEmail = async (params: LoginWithEmailParams, setAlert: (message: string) => void) => {
   const config = {
     method: 'post',
     url: 'users/login/',
     data: params,
   };
-  const response = await axiosRequest(config);
+  const response = await axiosRequest(config, setAlert);
   return response.data;
 };
 
-export const loginWithPhone = async (params: LoginWithPhoneParams) => {
+export const loginWithPhone = async (params: LoginWithPhoneParams, setAlert: (message: string) => void) => {
   const config = {
     method: 'post',
     url: 'users/login/',
     data: params,
   };
-  const response = await axiosRequest(config);
+  const response = await axiosRequest(config, setAlert);
   return response.data;
 };
 
@@ -111,7 +113,8 @@ interface FetchTasksParams {
 export const fetchTasks = async (
   params: FetchTasksParams,
   handleTasksFiltered: (tasks: any) => void,
-  setLoading: (loading: boolean) => void
+  setLoading: (loading: boolean) => void,
+  setAlert: (message: string) => void
 ) => {
   const config = {
     method: 'get',
@@ -121,14 +124,16 @@ export const fetchTasks = async (
 
   setLoading(true);
   try {
-    const response = await axiosRequest(config);
+    const response = await axiosRequest(config, setAlert);
     handleTasksFiltered(response.data);
   } catch (error) {
     console.error('Error fetching tasks:', error);
+    handleTasksFiltered([]);
   } finally {
     setLoading(false);
   }
 };
+
 
 // Add or edit a task
 export const handleTaskAdded = async (
@@ -139,7 +144,8 @@ export const handleTaskAdded = async (
   setFilteredTasks: (tasks: Task[]) => void,
   setIsOpen: (isOpen: boolean) => void,
   setCurrentTask: (task: Task | null) => void,
-  fetchTasks: () => Promise<void>
+  fetchTasks: () => Promise<void>,
+  setAlert: (message: string) => void
 ) => {
   const taskWithTimestamp: Omit<Task, 'id'> = {
     ...newTask,
@@ -150,7 +156,7 @@ export const handleTaskAdded = async (
     : { method: 'post', url: 'tasks/', data: taskWithTimestamp };
 
   try {
-    const response = await axiosRequest(config);
+    const response = await axiosRequest(config, setAlert);
     if (currentTask) {
       setTasks(tasks.map((task) => (task.id === currentTask.id ? response.data : task)));
       setFilteredTasks(tasks.map((task) => (task.id === currentTask.id ? response.data : task)));
@@ -172,7 +178,8 @@ export const handleTaskDeleted = async (
   tasks: Task[],
   setTasks: (tasks: Task[]) => void,
   setFilteredTasks: (tasks: Task[]) => void,
-  fetchTasks: () => Promise<void>
+  fetchTasks: () => Promise<void>,
+  setAlert: (message: string) => void
 ) => {
   const config = {
     method: 'delete',
@@ -180,7 +187,7 @@ export const handleTaskDeleted = async (
   };
 
   try {
-    await axiosRequest(config);
+    await axiosRequest(config, setAlert);
     setTasks(tasks.filter((task) => task.id !== id));
     setFilteredTasks(tasks.filter((task) => task.id !== id));
     await fetchTasks();

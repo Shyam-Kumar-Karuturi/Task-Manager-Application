@@ -10,6 +10,7 @@ import {
   handleTaskAdded,
   handleTaskDeleted,
 } from "../api/auth.service";
+import AlertPopover from "./Alert";
 import bgImage from "../assets/bg3.png";
 
 const TaskManager: React.FC = () => {
@@ -18,13 +19,14 @@ const TaskManager: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
   const [isLoading, setLoading] = useState<boolean>(false);
+  const [alertMessage, setAlertMessage] = useState<string>("");
 
   useEffect(() => {
-    loadTasks();
+    // loadTasks();
   }, []);
 
   const loadTasks = async () => {
-    await fetchTasks({}, handleTasksFiltered, setLoading);
+    await fetchTasks({}, handleTasksFiltered, setLoading, setAlertMessage);
   };
 
   const handleTasksFiltered = (tasks: Task[]) => {
@@ -117,7 +119,8 @@ const TaskManager: React.FC = () => {
                             setFilteredTasks,
                             setIsOpen,
                             setCurrentTask,
-                            loadTasks
+                            loadTasks,
+                            setAlertMessage
                           )
                         }
                         onCancel={() => {
@@ -152,7 +155,8 @@ const TaskManager: React.FC = () => {
                     tasks,
                     setTasks,
                     setFilteredTasks,
-                    loadTasks
+                    loadTasks,
+                    setAlertMessage
                   )
                 }
               />
@@ -160,6 +164,11 @@ const TaskManager: React.FC = () => {
           </div>
         </div>
       </div>
+      <AlertPopover
+        isOpen={!!alertMessage}
+        message={alertMessage}
+        onClose={() => setAlertMessage("")}
+      />
     </div>
   );
 };
