@@ -6,6 +6,7 @@ import { useDispatch } from "react-redux";
 import { setTokens } from "../api/authSlice";
 import AlertPopover from "./Alert";
 import bgImage from "../assets/bg.png";
+import { useNavigate } from "react-router-dom";
 
 const Registration: React.FC = () => {
   const [name, setName] = useState<string>("");
@@ -18,6 +19,7 @@ const Registration: React.FC = () => {
   const [alertMessage, setAlertMessage] = useState<string>("");
 
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   // State for touched fields
   const [touched, setTouched] = useState({
@@ -44,6 +46,7 @@ const Registration: React.FC = () => {
           refreshToken: response.refresh,
         })
       );
+      navigate("/dashboard");
     } catch (error) {
       console.error("Registration error", error);
     }
